@@ -21,13 +21,17 @@ const Courses = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/subjects'); // Adjust the port if needed
-        setSubjects(response.data.subjects);
-        setLoading(false);
+        const response = await axios.get('http://localhost:3001/api/subjects/visible');
+        if (response.data && Array.isArray(response.data)) {
+          setSubjects(response.data);
+          setLoading(false);
 
-        // Generate random colors for each card
-        const colors = response.data.subjects.map(() => getRandomColor());
-        setCardColors(colors);
+          // Generate random colors for each card
+          const colors = response.data.map(() => getRandomColor());
+          setCardColors(colors);
+        } else {
+          throw new Error('Invalid response format from server');
+        }
       } catch (err) {
         setError(err.message);
         setLoading(false);

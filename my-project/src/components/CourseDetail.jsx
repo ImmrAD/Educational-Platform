@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import FileList from './FileList';
+import axiosInstance from '../utils/axiosConfig';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -11,14 +12,14 @@ const CourseDetail = () => {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/subjects/${id}`);
-        console.log('Fetched course:', response.data); // Log the fetched course
-        setCourse(response.data.subject);
+        const response = await axiosInstance.get(`/api/engsubjects/${id}`);
+        console.log('Fetched course:', response.data);
+        setCourse(response.data);
       } catch (err) {
-        console.error('Error fetching course:', err); // Log the error
+        console.error('Error fetching course:', err);
         setError(err.message);
       } finally {
-        setLoading(false); // Disable loading in both success and error cases
+        setLoading(false);
       }
     };
 
@@ -31,7 +32,6 @@ const CourseDetail = () => {
 
   return (
     <div className='relative w-screen h-screen overflow-hidden'>
-      {/* Video background */}
       <video
         autoPlay
         loop
@@ -42,7 +42,6 @@ const CourseDetail = () => {
       </video>
 
       <div className="relative p-8">
-        {/* Animated Title */}
         <h1 className="text-4xl font-bold text-center text-white mb-8 neon-text animate-pulse">
           {course.title}
         </h1>
@@ -50,11 +49,15 @@ const CourseDetail = () => {
           {course.description}
         </h1>
 
-        {/* Content with black background and padding */}
-        <div className='bg-black bg-opacity-700 p-6 rounded-lg'>
-          <h2 className="text-xl text-white mb-4">Resources</h2>
+        <div className='bg-black bg-opacity-700 p-6 rounded-lg mt-8'>
+          <h2 className="text-xl text-white mb-4">Course Materials</h2>
+          <FileList />
+        </div>
+
+        <div className='bg-black bg-opacity-700 p-6 rounded-lg mt-8'>
+          <h2 className="text-xl text-white mb-4">Additional Resources</h2>
           <ul className="space-y-4">
-            {course.resources.map((resource, index) => (
+            {course.resources && course.resources.map((resource, index) => (
               <li key={index} className="text-white">
                 <h3 className="font-bold">{resource.title}</h3>
                 <p>Type: {resource.type}</p>
@@ -71,24 +74,9 @@ const CourseDetail = () => {
         </div>
       </div>
 
-      {/* CSS for Neon Effects and Hover Styles */}
       <style>{`
         .neon-text {
           text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff, 0 0 20px #00ffff;
-        }
-
-        .course-card:hover {
-          cursor: pointer;
-          color: white; /* Ensure text color stays white */
-        }
-
-        .course-card {
-          transition: background-color 0.3s ease; /* Smooth background color transition */
-        }
-
-        .course-card h2,
-        .course-card p {
-          transition: color 0.3s ease; /* Smooth text color transition */
         }
       `}</style>
     </div>

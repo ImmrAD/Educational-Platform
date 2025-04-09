@@ -1,19 +1,21 @@
 const mongoose = require("mongoose")
 
 const engsubjectSchema = new mongoose.Schema({
-    title:{
+    title: {
         type: String,
-        require: true
+        required: true,
+        trim: true
     },
-    sem:{
+    sem: {
         type: String,
-        require: true
+        required: true,
+        trim: true
     },
     resources: [
         {
-            title: {type: String, require: true},
-            type: {type: String, enum: ['youtube','pdf','link'], reqiured:true},
-            link: { type: String, required: true }
+            title: { type: String, required: true, trim: true },
+            type: { type: String, enum: ['youtube', 'pdf', 'link'], required: true },
+            link: { type: String, required: true, trim: true }
         }
     ]
 });

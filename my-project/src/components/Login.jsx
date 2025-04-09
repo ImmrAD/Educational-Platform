@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 
-function Login({ setIsAuthenticated }) {
+function Login({ setIsAuthenticated, setUserRole }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -12,11 +12,16 @@ function Login({ setIsAuthenticated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:3001/login', { email, password });
-      const { token } = response.data;
-      localStorage.setItem('authToken', token); // Store token in localStorage
-      setIsAuthenticated(true); // Update authentication state
-      navigate('/'); // Redirect to dashboard
+      const response = await axios.post('http://localhost:3001/api/users/login', {
+        email,
+        password
+      });
+      const { token, role } = response.data;
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userRole', role);
+      setIsAuthenticated(true);
+      setUserRole(role);
+      navigate('/');
     } catch (error) {
       alert(error.response?.data?.message || 'Login failed');
     }

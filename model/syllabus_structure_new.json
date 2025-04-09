@@ -1,0 +1,339 @@
+
+{
+  "First Year Engineering": {
+    "Semester I": [
+      {
+        "Subject Code": "FEC101",
+        "Subject Name": "Engineering Mathematics-I",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "Complex Numbers"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Hyperbolic function and Logarithm of Complex Numbers"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Partial Differentiation"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Applications of Partial Differentiation and Successive differentiation"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Matrices"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Numerical Solutions of Transcendental Equations and System of Linear Equations and Expansion of Function"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC102",
+        "Subject Name": "Engineering Physics-I",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "QUANTUM PHYSICS"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "CRYSTALLOGRAPHY"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "SEMICONDUCTOR PHYSICS"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "INTERFERENCE IN THIN FILM"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "SUPERCONDUCTORS AND SUPERCAPACITORS"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "ENGINEERING MATERIALS AND APPLICATIONS"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC103",
+        "Subject Name": "Engineering Chemistry-I",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "Atomic and Molecular Structure"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Aromatic systems &their molecular structure"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Intermolecular Forces & Critical Phenomena"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Phase Rule-Gibb's Phase Rule"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Polymers"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Water"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC104",
+        "Subject Name": "Engineering Mechanics",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "System of Coplanar Forces"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Equilibrium of System of Coplanar Forces"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Friction"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Kinematics of Particle"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Kinematics of Rigid Body"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Kinetics of a Particle"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC105",
+        "Subject Name": "Basic Electrical Engineering",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "DC Circuits"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "AC Circuits"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Generation of Three-Phase Voltages"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Transformers"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Electrical Machines"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Principle of operation of Single-Phase induction motors, stepper motor"
+          }
+        ]
+      }
+    ],
+    "Semester II": [
+      {
+        "Subject Code": "FEC201",
+        "Subject Name": "Engineering Mathematics-II",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "Differential Equations of First Order and First Degree"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Linear Differential Equations With Constant Coefficients and Variable Coefficients Of Higher Order"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Beta and Gamma Function, Differentiation under Integral sign and Rectification"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Multiple Integration-1"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Multiple Integration-2"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Numerical solution of ordinary differential equations of first order and first degree, and , Numerical Integration"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC202",
+        "Subject Name": "Engineering Physics-II",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "DIFFRACTION"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "LASER AND FIBRE OPTICS"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "ELECTRODYNAMICS"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "RELATIVITY"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "NANOTECHNOLOGY"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "PHYSICS OF SENSORS"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC203",
+        "Subject Name": "Engineering Chemistry-II",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "Principles of Spectroscopy"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Applications of Spectroscopy"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Concept of Electrochemistry"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Corrosion"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Green Chemistry and Synthesis of drugs"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Fuels and Combustion"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC204",
+        "Subject Name": "Engineering Graphics",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "Introduction to Engineering Graphics"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Projection of Points and Lines"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Projection of Solids"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Section of Solids"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Orthographic and Sectional Orthographic Projections"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Missing Views and Isometric Views"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC205",
+        "Subject Name": "C Programming",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "Fundamentals of C Programming"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "Control Structures"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "Functions"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "Arrays and Strings"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "Structure and Union"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "Pointers"
+          }
+        ]
+      },
+      {
+        "Subject Code": "FEC206",
+        "Subject Name": "Professional Communication and Ethics- I",
+        "Modules": [
+          {
+            "Module No": "01",
+            "Module Name": "FUNDAMENTALS OF COMMUNICATION"
+          },
+          {
+            "Module No": "02",
+            "Module Name": "VERBAL APTITUDE FOR EMPLOYMENT"
+          },
+          {
+            "Module No": "03",
+            "Module Name": "DEVELOPING READING AND WRITING SKILLS"
+          },
+          {
+            "Module No": "04",
+            "Module Name": "BUSINESS CORRESPONDENCE"
+          },
+          {
+            "Module No": "05",
+            "Module Name": "TECHNICAL WRITING"
+          },
+          {
+            "Module No": "06",
+            "Module Name": "PERSONALITY DEVELOPMENT AND SOCIAL ETIQUETTES"
+          }
+        ]
+      }
+    ]
+  }
+}

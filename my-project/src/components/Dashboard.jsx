@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // Assuming you're using react-router for navigation
+import { Link } from 'react-router-dom';
 
-const Dashboard = () => {
+const Dashboard = ({ userRole }) => {
   const [typedText, setTypedText] = useState('');
-  const [engsubjects, setEngsubjects] = useState([]); // State to hold fetched data
-  const message = "Welcome to Edu-cate!";
-  const cardColors = ['#FF5733', '#33FF57', '#3357FF']; // Example card colors for hover effect
+  const [engsubjects, setEngsubjects] = useState([]);
+  const message = `Welcome to Edu-cate! (${userRole})`;
+  const cardColors = ['#FF5733', '#33FF57', '#3357FF'];
 
   useEffect(() => {
-    // Fetch subjects from the backend API
     const fetchSubjects = async () => {
       try {
-        // Fetch all subjects (no specific semester filter)
-        const response = await fetch(`http://localhost:3001/api/engsubjects`);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`http://localhost:3001/api/engsubjects`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -24,7 +27,7 @@ const Dashboard = () => {
     };
 
     fetchSubjects();
-  }, []); // Empty array means it will run only once on component mount
+  }, []);
 
   useEffect(() => {
     let currentIndex = 0;
@@ -65,58 +68,79 @@ const Dashboard = () => {
     };
   }, [message]);
 
-  // Create an array of unique semesters from subjects
-  const uniqueSemesters = [...new Set(engsubjects.map(subject => subject.sem))];
+  const renderStudentDashboard = () => {
+    const uniqueSemesters = [...new Set(engsubjects.map(subject => subject.sem))];
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 mt-12 overflow-y-auto h-full">
+        {uniqueSemesters.length > 0 ? (
+          uniqueSemesters.map((semester, index) => (
+            <Link key={semester} to={`/Dashboard/sem/${semester}`}>
+              <div
+                className="course-card p-6 rounded-lg shadow-md transition-all"
+                style={{ backgroundColor: 'black', minHeight: '150px' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = cardColors[index % cardColors.length];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'black';
+                }}
+              >
+                <h2 className="text-2xl font-semibold mb-4 text-white">Semester {semester}</h2>
+              </div>
+            </Link>
+          ))
+        ) : (
+          <p className="text-white">No semesters available</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderTeacherDashboard = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 mt-12">
+      <Link to="/upload-materials" className="course-card p-6 rounded-lg shadow-md bg-black hover:bg-green-600 transition-all">
+        <h2 className="text-2xl font-semibold mb-4 text-white">Upload Materials</h2>
+        <p className="text-gray-300">Share educational resources</p>
+      </Link>
+      <Link to="/manage-subjects" className="course-card p-6 rounded-lg shadow-md bg-black hover:bg-blue-600 transition-all">
+        <h2 className="text-2xl font-semibold mb-4 text-white">Manage Subjects</h2>
+        <p className="text-gray-300">Create and update subject content</p>
+      </Link>
+      <Link to="/view-uploads" className="course-card p-6 rounded-lg shadow-md bg-black hover:bg-purple-600 transition-all">
+        <h2 className="text-2xl font-semibold mb-4 text-white">View Uploads</h2>
+        <p className="text-gray-300">Manage your uploaded content</p>
+      </Link>
+    </div>
+  );
+
+  const renderAdminDashboard = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 mt-12">
+      <Link to="/manage-users" className="course-card p-6 rounded-lg shadow-md bg-black hover:bg-red-600 transition-all">
+        <h2 className="text-2xl font-semibold mb-4 text-white">Manage Users</h2>
+        <p className="text-gray-300">Manage user accounts and permissions</p>
+      </Link>
+      <Link to="/system-settings" className="course-card p-6 rounded-lg shadow-md bg-black hover:bg-yellow-600 transition-all">
+        <h2 className="text-2xl font-semibold mb-4 text-white">System Settings</h2>
+        <p className="text-gray-300">Configure platform settings and features</p>
+      </Link>
+      <Link to="/analytics" className="course-card p-6 rounded-lg shadow-md bg-black hover:bg-indigo-600 transition-all">
+        <h2 className="text-2xl font-semibold mb-4 text-white">Analytics</h2>
+        <p className="text-gray-300">View platform usage and performance metrics</p>
+      </Link>
+    </div>
+  );
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden">
-      {/* Video Background */}
-      <video autoPlay loop muted className="absolute inset-0 w-full h-full object-cover z-0">
-        <source src="/background.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Typing Effect with Neon Outline */}
-        <div className="absolute top-8 left-0 right-0 flex items-start justify-center z-10">
-          <h1 className="text-4xl font-mono font-bold text-center neon-text">
-            <span className="text-white">{typedText}</span>
-          </h1>
-        </div>
-
-        {/* Grid of Semesters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 mt-12 overflow-y-auto h-full">
-          {uniqueSemesters.length > 0 ? (
-            uniqueSemesters.map((semester, index) => (
-              <Link key={semester} to={`/Dashboard/sem/${semester}`}>
-                <div
-                  className="course-card p-6 rounded-lg shadow-md transition-all"
-                  style={{ backgroundColor: 'black', minHeight: '150px' }} // Ensure a minimum height
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = cardColors[index % cardColors.length];
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'black';
-                  }}
-                >
-                  <h2 className="text-2xl font-semibold mb-4 text-white">Semester {semester}</h2>
-                </div>
-              </Link>
-            ))
-          ) : (
-            <p className="text-white">No semesters available</p> // Display message if no semesters
-          )}
-        </div>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="container mx-auto py-8">
+        <h1 className="text-4xl font-bold text-center mb-8">
+          <span className="typing-text">{typedText}</span>
+          <span className="cursor">|</span>
+        </h1>
+        {userRole === 'student' && renderStudentDashboard()}
+        {userRole === 'teacher' && renderTeacherDashboard()}
+        {userRole === 'admin' && renderAdminDashboard()}
       </div>
-
-      {/* Neon Effect */}
-      <style>
-        {`
-          .neon-text {
-            text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF, 0 0 15px #00FFFF, 0 0 20px #00FFFF;
-          }
-        `}
-      </style>
     </div>
   );
 };

@@ -1,184 +1,136 @@
 const cors = require("cors");
 const express = require("express");
+const { initializeSubjectVisibility } = require('./utils/initSubjectVisibility');
 const { z } = require('zod'); // Use Zod for schema validation
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require('crypto');
+const errorHandler = require('./middleware/errorHandler');
 require('dotenv').config();
 const EngSubject = require('./models/engsubject'); // Adjust path accordingly
-const engsubjectsRoute = require('./routes/engsubjects'); // Import the route
-
+const engsubjectsRouter = require('./routes/engsubjects');
+const filesRouter = require('./routes/files');
+const subjectsRouter = require('./routes/subjects');
+const subjectVisibilityRouter = require('./routes/subjectVisibility');
+const Subject = require('./models/subject');
+const File = require('./models/file'); // Add File model import
+const usersRouter = require('./routes/users');
+const analyticsRouter = require('./routes/analytics');
 
 const app = express();
 
-// MongoDB connection
-mongoose.connect('mongodb+srv://ananddane1:yWCAi9RxEZz9wIEY@cluster0.kwtobog.mongodb.net/mydatabase')
-  .then(() => console.log("MongoDB is connected!"))
-  .catch((err) => console.error("MongoDB connection error: ", err));
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL
+].filter(Boolean); // Remove any undefined/null values
 
-app.use(cors());
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // to parse URL-encoded bodies
 
-// Import the user model
-const User = require('./models/user');
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-// Helper to send OTP via email
-const sendOtpEmail = async (email, otp) => {
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ananddane1:yWCAi9RxEZz9wIEY@cluster0.kwtobog.mongodb.net/educate';
+
+mongoose.connect(MONGODB_URI)
+  .then(async () => {
+    console.log("MongoDB is connected!");
+    try {
+      await initializeSubjectVisibility();
+      console.log('Subject visibility initialized');
+    } catch (error) {
+      console.error('Error initializing subject visibility:', error);
+    }
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error: ", err);
+    process.exit(1);
+  });
+
+// Register all routes with consistent API prefix
+app.use('/api', engsubjectsRouter);
+app.use('/api', filesRouter);
+app.use('/api', subjectsRouter);
+app.use('/api/visibility', subjectVisibilityRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/analytics', analyticsRouter);
+
+// Contact route
+app.post('/api/contact', async (req, res) => {
+    const { message, isSuggestion } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+
     let transporter = nodemailer.createTransport({
         service: 'Gmail',
         auth: {
-            user: process.env.EMAIL_USER, // Your email
-            pass: process.env.EMAIL_PASS  // Your email password
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
         }
     });
 
-    let info = await transporter.sendMail({
-        from: '"Educate" <otp.trails@gmail.com>',
-        to: email,
-        subject: "Your OTP Code",
-        text: `Your OTP code is ${otp}. It will expire in 10 minutes.`
-    });
-
-    console.log("OTP email sent: ", info.response);
-};
-
-// Signup Route with OTP Generation
-app.post("/register", async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        let mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: process.env.ADMIN_EMAIL || 'otptrails@gmail.com',
+            subject: 'New Contact Message',
+            text: `
+                New message received:
 
-        // Validate input
-        if (!username || !email || !password) {
-            return res.status(400).json({ error: 'All fields are required' });
-        }
+                Message: ${message}
 
-        // Check if user already exists
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ error: 'User already exists' });
-        }
+                ${isSuggestion ? 'This message is categorized as a suggestion.' : 'This message is not a suggestion.'}
+            `
+        };
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Generate OTP
-        const otp = crypto.randomInt(100000, 999999).toString();
-        const otpExpiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
-
-        // Create new user
-        const newUser = new User({
-            username,
-            email,
-            password: hashedPassword,
-            otp,
-            otpExpiresAt
-        });
-
-        await newUser.save();
-
-        // Send OTP
-        await sendOtpEmail(email, otp);
-
-        res.status(201).json({
-            message: 'User registered successfully. OTP sent to email.',
-            userId: newUser._id
-        });
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ message: 'Message sent successfully!' });
     } catch (error) {
-        console.error("Signup Error: ", error.message);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error("Email sending error: ", error);
+        res.status(500).json({ error: 'Failed to send message' });
     }
 });
 
-// OTP Verification Route
-app.post("/verify-otp", async (req, res) => {
-    const { userId, otp } = req.body;
-
-    try {
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(400).json({ message: "User not found" });
-        }
-
-        // Check if OTP matches and is still valid
-        if (user.otp !== otp || user.otpExpiresAt < Date.now()) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
-        }
-
-        // Mark user as verified
-        user.isVerified = true;
-        user.otp = undefined; // Clear OTP
-        user.otpExpiresAt = undefined; // Clear OTP expiry time
-        await user.save();
-
-        res.status(200).json({ message: "OTP verified successfully. You can now log in." });
-    } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// Login Route
-app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        // Check if user exists
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ message: "User not found" });
-        }
-
-        // Check if the user is verified
-        if (!user.isVerified) {
-            return res.status(403).json({ message: "Please verify your email before logging in." });
-        }
-
-        // Compare passwords
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Invalid credentials" });
-        }
-
-        // Generate token and send response
-        const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(200).json({ message: "Login successful", token });
-    } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-    }
-});
-//Import the subject model
-const Subject = require('./models/subject');
-
-
-
-
-app.use(cors({
-    origin: "http://localhost:5173" // Ensure this matches the frontend URL
-}));
-
-
-
-// Schema for validating subject inputs, including resources
-const subjectSchema = z.object({
-    title: z.string(),
-    description: z.string(),
-    resources: z.array(
-        z.object({
-            title: z.string(),
-            type: z.enum(["youtube", "pdf", "link"]),
-            link: z.string().url(),
-        })
-    ).optional() // resources field is optional
-});
-
-// Use the engsubjects routes
-app.use(engsubjectsRoute); // This makes your route available
-
-// Add new subject title and description
-app.post("/subject", async (req, res) => {
+// Subject routes
+app.post("/api/subject", async (req, res) => {
     const createPayload = req.body;
     const parsedPayload = subjectSchema.safeParse(createPayload);
 
@@ -205,7 +157,7 @@ app.post("/subject", async (req, res) => {
     });
 });
 
-app.get("/subjects", async (req, res) => {
+app.get("/api/subjects", async (req, res) => {
     try {
         const subjects = await Subject.find();  // Fetch all subjects from MongoDB
         res.json({ subjects });  // Return subjects as JSON response
@@ -214,46 +166,7 @@ app.get("/subjects", async (req, res) => {
     }
 });
 
-
-// Contact Route
-app.post('/contact', async (req, res) => {
-    const { message, isSuggestion } = req.body;
-
-    if (!message) {
-        return res.status(400).json({ error: 'Message is required' });
-    }
-
-    let transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-            user: process.env.EMAIL_USER, // Your email
-            pass: process.env.EMAIL_PASS  // Your email password
-        }
-    });
-
-    try {
-        let mailOptions = {
-            from: process.env.EMAIL_USER, // Sender address
-            to: 'otptrails@gmail.com', // Owner's email
-            subject: 'New Contact Message',
-            text: `
-                New message received:
-
-                Message: ${message}
-
-                ${isSuggestion ? 'This message is categorized as a suggestion.' : 'This message is not a suggestion.'}
-            ` // Message body formatted with suggestion information
-        };
-
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: 'Message sent successfully!' });
-    } catch (error) {
-        console.error("Email sending error: ", error);
-        res.status(500).json({ error: 'Failed to send message' });
-    }
-});
-
-app.put("/subjects/:id", async (req, res) => {
+app.put("/api/subjects/:id", async (req, res) => {
     const { id } = req.params;
     const updatePayload = req.body;
 
@@ -280,7 +193,7 @@ app.put("/subjects/:id", async (req, res) => {
     }
 });
 
-app.get("/subjects/:id", async (req, res) => {
+app.get("/api/subjects/:id", async (req, res) => {
     try {
         const subject = await Subject.findById(req.params.id);
         if (!subject) {
@@ -292,7 +205,7 @@ app.get("/subjects/:id", async (req, res) => {
     }
 });
 
-app.post('/engsubject', async (req, res) => {
+app.post('/api/engsubject', async (req, res) => {
     try {
         const newSubject = new EngSubject(req.body);
         const savedSubject = await newSubject.save();
@@ -314,9 +227,17 @@ app.get('/api/engsubjects', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-  
 
-app.listen(3001, () => {
-    console.log("server is running on port 3001");
+// Error handling middleware
+app.use(errorHandler);
+
+// Handle 404 routes
+app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
 

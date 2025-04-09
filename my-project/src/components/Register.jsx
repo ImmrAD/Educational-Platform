@@ -3,8 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 
-function Register({ setIsAuthenticated }) {
-  const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+function Register({ setIsAuthenticated, setUserRole }) {
+  const [formData, setFormData] = useState({ username: '', email: '', password: '', role: 'student' });
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1); // Step 1: Registration, Step 2: OTP Verification
   const [userId, setUserId] = useState(null);
@@ -30,10 +30,13 @@ function Register({ setIsAuthenticated }) {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3001/verify-otp', { userId, otp });
-      localStorage.setItem('authToken', 'dummy-token'); // Simulate token for successful OTP
-      setIsAuthenticated(true); // Mark user as authenticated
-      navigate('/'); // Redirect to dashboard
+      const response = await axios.post('http://localhost:3001/verify-otp', { userId, otp });
+      const loginResponse = await axios.post('http://localhost:3001/login', { email: formData.email, password: formData.password });
+      localStorage.setItem('authToken', loginResponse.data.token);
+      localStorage.setItem('userRole', loginResponse.data.role);
+      setIsAuthenticated(true);
+      setUserRole(loginResponse.data.role);
+      navigate('/');
     } catch (error) {
       alert(error.response?.data?.message || 'Invalid OTP');
     }
@@ -94,6 +97,16 @@ function Register({ setIsAuthenticated }) {
                 )}
               </button>
             </div>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full p-2 mt-1 border border-gray-300 rounded-md bg-gray-800 text-white focus:outline-none focus:ring focus:ring-indigo-500"
+            >
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Admin</option>
+            </select>
             <button
               type="submit"
               className="w-full py-2 font-bold text-white bg-black rounded-md hover:bg-green-600 focus:outline-none focus:ring focus:ring-indigo-500"
