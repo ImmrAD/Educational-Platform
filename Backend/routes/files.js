@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 const SubjectClassifier = require('../models/mlModel');
 const SubjectVisibility = require('../models/subjectVisibility');
 const ensureUploadDirectory = require('../utils/ensureUploadDir');
-const { uploadToGridFS, deleteFromGridFS, getFileStream } = require('../config/gridfs');
+const fs_promises = require('fs').promises;
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -64,7 +64,6 @@ const isTeacher = (req, res, next) => {
 
 // Upload file route with automatic subject detection
 router.post('/upload', authenticateToken, isTeacher, upload.single('file'), async (req, res) => {
-    let tempPath = null;
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -72,13 +71,14 @@ router.post('/upload', authenticateToken, isTeacher, upload.single('file'), asyn
 
         // Ensure uploads directory exists
         const uploadsDir = path.join(__dirname, '..', 'uploads');
-        if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-        }
+        await fs.mkdir(uploadsDir, { recursive: true });
 
-        // Save file temporarily to use with FileSorter
-        tempPath = path.join(__dirname, '..', 'uploads', req.file.originalname);
-        fs.writeFileSync(tempPath, req.file.buffer);
+        // Generate unique filename
+        const uniqueFilename = `${Date.now()}-${req.file.originalname}`;
+        const filePath = path.join(uploadsDir, uniqueFilename);
+
+        // Save file to local storage
+        await fs.writeFile(filePath, req.file.buffer);
 
         // Organize file and get subject information
         const { subject: organizedSubject, subjectCode } = await SubjectClassifier.organizeFile(tempPath, path.join(__dirname, '..', 'uploads'));
@@ -94,17 +94,14 @@ router.post('/upload', authenticateToken, isTeacher, upload.single('file'), asyn
             await subject.save();
         }
 
-        // Upload file to GridFS
-        const { fileId, filename } = await uploadToGridFS(req.file);
-
         const newFile = new File({
-            filename: filename,
+            filename: uniqueFilename,
             originalName: req.file.originalname,
             fileType: path.extname(req.file.originalname),
             fileSize: req.file.size,
             subject: subject._id,
             uploadedBy: req.user.id,
-            filePath: fileId.toString(),
+            filePath: filePath,
             subjectCode: subjectCode
         });
 
@@ -141,15 +138,22 @@ router.get('/download/:fileId', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'File not found' });
         }
 
+        // Check if file exists in local storage
+        try {
+            await fs.access(file.filePath);
+        } catch (error) {
+            return res.status(404).json({ error: 'File not found in storage' });
+        }
+
         // Increment access count
         file.accessCount += 1;
         await file.save();
 
-        // Stream file from GridFS
-        const downloadStream = getFileStream(new mongoose.Types.ObjectId(file.filePath));
+        // Stream file from local storage
         res.setHeader('Content-Type', file.fileType);
         res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
-        downloadStream.pipe(res);
+        const fileStream = fs.createReadStream(file.filePath);
+        fileStream.pipe(res);
     } catch (error) {
         console.error('Error downloading file:', error);
         res.status(500).json({ error: 'Error downloading file' });
@@ -178,8 +182,13 @@ router.delete('/:fileId', authenticateToken, isTeacher, async (req, res) => {
             return res.status(404).json({ error: 'File not found' });
         }
 
-        // Delete file from GridFS
-        await deleteFromGridFS(new mongoose.Types.ObjectId(file.filePath));
+        // Delete file from local storage
+        try {
+            await fs.unlink(file.filePath);
+        } catch (error) {
+            console.error('Error deleting file from storage:', error);
+            return res.status(500).json({ error: 'Error deleting file from storage' });
+        }
 
         // Delete file record from database
         await File.findByIdAndDelete(req.params.fileId);
