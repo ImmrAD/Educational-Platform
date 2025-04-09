@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
 
 const SemesterSubjects = () => {
   const { semesterId } = useParams();
@@ -9,29 +10,30 @@ const SemesterSubjects = () => {
   const [fileOperations, setFileOperations] = useState({});
   const [operationError, setOperationError] = useState(null);
 
-  const handleFileOperation = (fileId, operation, isLoading) => {
+  const handleFileOperation = useCallback((fileId, operation, isLoading) => {
     setFileOperations(prev => ({
       ...prev,
       [fileId]: { ...prev[fileId], [operation]: isLoading }
     }));
-  };
+  }, []);
 
-  const handleDownload = async (file) => {
+  const showError = useCallback((message, duration = 5000) => {
+    setOperationError(message);
+    setTimeout(() => setOperationError(null), duration);
+  }, []);
+
+  const handleDownload = useCallback(async (file) => {
     handleFileOperation(file._id, 'downloading', true);
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:3001/files/download/${file._id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await axios({
+        url: `http://localhost:3001/files/download/${file._id}`,
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Download failed');
-      }
-
-      const blob = await response.blob();
+      const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -42,30 +44,21 @@ const SemesterSubjects = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
-      setOperationError(`Failed to download ${file.originalName}: ${error.message}`);
-      setTimeout(() => setOperationError(null), 5000);
+      showError(`Failed to download ${file.originalName}: ${error.response?.data || error.message}`);
     } finally {
       handleFileOperation(file._id, 'downloading', false);
     }
-  };
+  }, [handleFileOperation, showError]);
 
-  const handleDelete = async (file) => {
+  const handleDelete = useCallback(async (file) => {
     if (!window.confirm('Are you sure you want to delete this file?')) return;
 
     handleFileOperation(file._id, 'deleting', true);
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:3001/files/${file._id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      await axios.delete(`http://localhost:3001/files/${file._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Delete failed');
-      }
 
       setSubjects(prevSubjects =>
         prevSubjects.map(s => ({
@@ -75,12 +68,11 @@ const SemesterSubjects = () => {
       );
     } catch (error) {
       console.error('Delete error:', error);
-      setOperationError(`Failed to delete ${file.originalName}: ${error.message}`);
-      setTimeout(() => setOperationError(null), 5000);
+      showError(`Failed to delete ${file.originalName}: ${error.response?.data || error.message}`);
     } finally {
       handleFileOperation(file._id, 'deleting', false);
     }
-  };
+  }, [handleFileOperation, showError]);
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -93,36 +85,22 @@ const SemesterSubjects = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:3001/api/visibility/${semesterId}`, {
+        const { data } = await axios.get(`http://localhost:3001/api/visibility/${semesterId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          console.error('Backend returned an error response:', text);
-          throw new Error(`Error ${response.status}: ${text}`);
-        }
-
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (jsonError) {
-          console.error('Response is not valid JSON:', text);
-          throw new Error('Server returned invalid JSON. Check backend response.');
-        }
 
         if (!data.subjects || !Array.isArray(data.subjects)) {
           throw new Error('Subjects data is missing or malformed.');
         }
 
         setSubjects(data.subjects);
+        setError(null);
       } catch (err) {
         console.error('Error fetching subjects:', err);
-        setError(err.message);
+        setError(err.response?.data || err.message);
       } finally {
         setLoading(false);
       }
@@ -173,7 +151,7 @@ const SemesterSubjects = () => {
                 <div className="mt-6">
                   <h3 className="text-lg font-medium text-white mb-3">Modules</h3>
                   <div className="space-y-2">
-                    {subject.modules && subject.modules.length > 0 ? (
+                    {subject.modules?.length > 0 ? (
                       subject.modules.map((module) => (
                         <div key={module['Module No']} className="bg-gray-700 p-3 rounded">
                           <p className="text-white">
@@ -191,7 +169,7 @@ const SemesterSubjects = () => {
                 <div className="mt-6">
                   <h3 className="text-lg font-medium text-white mb-3">Course Materials</h3>
                   <div className="space-y-2">
-                    {subject.files && subject.files.length > 0 ? (
+                    {subject.files?.length > 0 ? (
                       subject.files.map((file) => (
                         <div key={file._id} className="bg-gray-700 p-3 rounded flex justify-between items-center">
                           <div>
